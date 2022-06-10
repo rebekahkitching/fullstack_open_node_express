@@ -1,8 +1,11 @@
 
+const { response } = require('express');
 const express = require('express')
 const app = express()
 
-app.use(express.json())
+app.use(express.json());
+app.set('view engine', 'ejs');
+
 // json parser 
 
 // const app = http.createServer((request, response) => {
@@ -40,10 +43,18 @@ app.get('/', (request,response) => {
     response.send('<h1>Hello world</h1>')
 })
 
+app.get('/info', (request, response) => {
+    response.render("info.html.ejs", {
+        peopleCount: persons.length,
+        datetime: new Date()
+    });
+    response.end()
+})
+
 // CRUD: Read: Index
-app.get('/api/persons', (req, res) => {
-    res.json(persons);
-    res.end();
+app.get('/api/persons', (request, response) => {
+    response.json(persons);
+    response.end();
 })
 
 // CRUD: Read: Show
@@ -51,7 +62,7 @@ app.get('/api/persons/:id', (request, response) => {
     const id = Number(request.params.id)
     const person = persons.find(person => person.id === id)
 
-    if(person) {
+    if(person !== undefined) {
         response.json(person)
     } else {
         response.status(404).end()
@@ -60,41 +71,70 @@ app.get('/api/persons/:id', (request, response) => {
 // handler for HTTP GET requests made to notes path of application. response w json method 'response' object. send notes array that was passed as JSON string. 
 
 const generateId = () => {
-    const maxID = persons.length > 0
+    const maxId = persons.length > 0
         ? Math.max(...persons.map(n => n.id))
-        : 0
-    return maxId + 1
+        : 0;
+
+    return maxId + 1;
 }
 
 app.post('/api/persons', (request,response) => {
-    const body = request.body
+    // console.log(71);
+    // console.log(request.body)
 
-    if (!body.content){
-        return response.status(400).json({
-            error: 'content missing'
-        })
+
+    const requestName = request.body.name;
+    const requestNumber = request.body.number;
+    if (requestName === undefined || requestNumber === undefined) {
+        response.status(400);
+        response.end();
+        return;
     }
+    const newId = generateId();
 
-    const person = {
-        content: body.content,
-        important: body.important || false,
-        date: new Date(),
-        id: generateId(),
+    // console.log(78)
+    // console.log(newId);
+
+    const newPerson = {
+        id: newId,
+        name: requestName,
+        number: requestNumber,
     }
+    // console.log(83);
+    // console.log(newPerson);
 
-    persons = persons.concat(person)
+    persons.push(newPerson);
+    // console.log(87);
+    // console.log(persons);
 
-    response.json(person)
+    response.json({
+        newPersonId: newId,
+    })
+
+    response.status(200);
+    response.end();
 })
 // access data from the body property of request object. 
 
 
 // CRUD: Delete
-app.delete('api/notes/:id', (request, response) => {
-    const id = Number(request.params.id)
-    persons = persons.filter(note => note.id !== id)
+app.delete('/api/persons/:id', (request, response) => {
+    const requestIdString = request.params.id;
+    const requestId = Number(requestIdString)
 
-    response.status(204).end()
+    // console.log(125)
+    // console.log(requestId);
+
+    const newPersons = persons.filter(person => person.id !== requestId);
+    // console.log(129)
+    // console.log(newPersons)
+
+    persons = newPersons;
+    // console.log(133)
+    // console.log(persons);
+
+    response.status(200);
+    response.end();
 })
  
 
